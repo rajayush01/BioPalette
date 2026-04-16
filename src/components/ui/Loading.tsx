@@ -1,235 +1,426 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from "react";
 
-interface LoadingProps {
-	mode: 'timed' | 'suspense';
-	size: 'sm' | 'md' | 'lg';
-	duration?: number;
-	onLoadingComplete?: () => void;
-	showProgress?: boolean;
+interface LoaderProps {
+  onComplete?: () => void;
 }
 
-const Loading: React.FC<LoadingProps> = ({ mode, size, duration = 3000, onLoadingComplete, showProgress = true }) => {
-	const [progress, setProgress] = useState(0);
+export default function Loader({ onComplete }: LoaderProps) {
+  const [progress, setProgress] = useState(0);
+  const [phase, setPhase] = useState<"loading" | "done">("loading");
 
-	useEffect(() => {
-		if (mode === 'timed' && duration && onLoadingComplete) {
-			const timer = setTimeout(onLoadingComplete, duration);
+  useEffect(() => {
+    // Simulate loading progress
+    const intervals: ReturnType<typeof setTimeout>[] = [];
 
-			// Progress animation
-			if (showProgress) {
-				const interval = setInterval(() => {
-					setProgress((prev) => {
-						if (prev >= 100) {
-							clearInterval(interval);
-							return 100;
-						}
-						return prev + 100 / (duration / 50);
-					});
-				}, 50);
+    const steps = [
+      { to: 30, delay: 0, duration: 600 },
+      { to: 58, delay: 700, duration: 500 },
+      { to: 80, delay: 1300, duration: 400 },
+      { to: 100, delay: 1800, duration: 350 },
+    ];
 
-				return () => {
-					clearTimeout(timer);
-					clearInterval(interval);
-				};
-			}
+    steps.forEach(({ to, delay, duration }) => {
+      const t = setTimeout(() => {
+        const start = Date.now();
+        const from = progress;
+        const tick = setInterval(() => {
+          const elapsed = Date.now() - start;
+          const frac = Math.min(elapsed / duration, 1);
+          // Ease out cubic
+          const eased = 1 - Math.pow(1 - frac, 3);
+          setProgress(Math.round(from + (to - from) * eased));
+          if (frac >= 1) clearInterval(tick);
+        }, 16);
+        intervals.push(tick as unknown as ReturnType<typeof setTimeout>);
+      }, delay);
+      intervals.push(t);
+    });
 
-			return () => clearTimeout(timer);
-		}
-	}, [mode, duration, onLoadingComplete, showProgress]);
+    const done = setTimeout(() => {
+      setPhase("done");
+      setTimeout(() => onComplete?.(), 700);
+    }, 2400);
+    intervals.push(done);
 
-	// Responsive size classes
-	const sizeClasses = {
-		sm: 'w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16',
-		md: 'w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24',
-		lg: 'w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 lg:w-32 lg:h-32',
-	};
+    return () => intervals.forEach(clearTimeout);
+  }, []);
 
-	// Responsive logo text sizes
-	const logoTextSizes = {
-		sm: 'text-lg sm:text-xl md:text-2xl',
-		md: 'text-xl sm:text-2xl md:text-3xl',
-		lg: 'text-2xl sm:text-3xl md:text-4xl lg:text-5xl',
-	};
+  return (
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap');
 
-	// Responsive ring sizes
-	const getRingSizes = () => {
-		switch (size) {
-			case 'sm':
-				return {
-					ring1: 'w-14 h-14 sm:w-16 sm:h-16 md:w-18 md:h-18',
-					ring2: 'w-18 h-18 sm:w-20 sm:h-20 md:w-22 md:h-22',
-					ring3: 'w-22 h-22 sm:w-24 sm:h-24 md:w-26 md:h-26',
-				};
-			case 'md':
-				return {
-					ring1: 'w-18 h-18 sm:w-22 sm:h-22 md:w-26 md:h-26',
-					ring2: 'w-22 h-22 sm:w-26 sm:h-26 md:w-30 md:h-30',
-					ring3: 'w-26 h-26 sm:w-30 sm:h-30 md:w-34 md:h-34',
-				};
-			case 'lg':
-				return {
-					ring1: 'w-22 h-22 sm:w-26 sm:h-26 md:w-30 md:h-30 lg:w-34 lg:h-34',
-					ring2: 'w-26 h-26 sm:w-30 sm:h-30 md:w-34 md:h-34 lg:w-38 lg:h-38',
-					ring3: 'w-30 h-30 sm:w-34 sm:h-34 md:w-38 md:h-38 lg:w-42 lg:h-42',
-				};
-			default:
-				return {
-					ring1: 'w-18 h-18 sm:w-22 sm:h-22 md:w-26 md:h-26',
-					ring2: 'w-22 h-22 sm:w-26 sm:h-26 md:w-30 md:h-30',
-					ring3: 'w-26 h-26 sm:w-30 sm:h-30 md:w-34 md:h-34',
-				};
-		}
-	};
+        .bio-loader {
+          position: fixed;
+          inset: 0;
+          z-index: 9999;
+          background: #1a3a1a;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          overflow: hidden;
+          transition: opacity 0.6s ease, transform 0.6s ease;
+        }
+        .bio-loader.done {
+          opacity: 0;
+          transform: scale(1.04);
+          pointer-events: none;
+        }
 
-	const ringSizes = getRingSizes();
+        /* Noise overlay */
+        .bio-loader::before {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+          opacity: 0.25;
+          pointer-events: none;
+        }
 
-	// Responsive data point container size
-	const getDataPointContainerSize = () => {
-		switch (size) {
-			case 'sm':
-				return 'w-28 h-28 sm:w-32 sm:h-32 md:w-36 md:h-36';
-			case 'md':
-				return 'w-32 h-32 sm:w-36 sm:h-36 md:w-40 md:h-40';
-			case 'lg':
-				return 'w-36 h-36 sm:w-40 sm:h-40 md:w-44 md:h-44 lg:w-48 lg:h-48';
-			default:
-				return 'w-32 h-32 sm:w-36 sm:h-36 md:w-40 md:h-40';
-		}
-	};
+        /* Background orbs */
+        .loader-orb {
+          position: absolute;
+          border-radius: 50%;
+          pointer-events: none;
+          animation: orbPulse 6s ease-in-out infinite;
+        }
+        .loader-orb-1 {
+          width: 500px; height: 500px;
+          background: radial-gradient(circle, #2d5a27 0%, transparent 70%);
+          top: -20%; left: -15%;
+          animation-delay: 0s;
+        }
+        .loader-orb-2 {
+          width: 380px; height: 380px;
+          background: radial-gradient(circle, #4a7c59 0%, transparent 70%);
+          bottom: -15%; right: -5%;
+          animation-delay: -3s;
+        }
+        .loader-orb-3 {
+          width: 260px; height: 260px;
+          background: radial-gradient(circle, #a0653a 0%, transparent 70%);
+          top: 30%; right: 20%;
+          opacity: 0.35;
+          animation-delay: -1.5s;
+        }
 
-	return (
-		<div className="flex flex-col items-center justify-center min-h-screen w-full p-4 space-y-4 sm:space-y-6 md:space-y-8">
-			{/* Logo Animation Container */}
-			<div className="relative flex items-center justify-center">
-				{/* Main Logo - Bio Palette styled */}
-				<div className={`${sizeClasses[size]} relative z-10 flex items-center justify-center`}>
-					<div className="w-full h-full bg-gradient-to-br from-blue-600 to-blue-800 rounded-xl shadow-2xl flex items-center justify-center animate-pulse">
-						<div className={`text-white font-bold tracking-wider ${logoTextSizes[size]}`}>IB</div>
-					</div>
-					{/* Corporate glow effect */}
-					<div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-blue-600 opacity-30 blur-xl rounded-xl animate-ping"></div>
-				</div>
+        /* Central ring */
+        .loader-ring-wrap {
+          position: relative;
+          width: 160px;
+          height: 160px;
+          margin-bottom: 40px;
+        }
+        .loader-ring-bg {
+          position: absolute;
+          inset: 0;
+          border-radius: 50%;
+          border: 1.5px solid rgba(255,255,255,0.08);
+        }
+        .loader-ring-track {
+          position: absolute;
+          inset: 0;
+          border-radius: 50%;
+          border: 1.5px solid transparent;
+          border-top-color: rgba(212,184,150,0.25);
+          animation: spin 3s linear infinite;
+        }
+        .loader-ring-mid {
+          position: absolute;
+          inset: 16px;
+          border-radius: 50%;
+          border: 1px solid rgba(200,219,192,0.12);
+          animation: spinRev 5s linear infinite;
+        }
+        .loader-ring-inner {
+          position: absolute;
+          inset: 32px;
+          border-radius: 50%;
+          border: 1.5px solid rgba(135,168,120,0.2);
+          border-bottom-color: rgba(135,168,120,0.5);
+          animation: spin 2s linear infinite;
+        }
 
-				{/* Data flow rings - representing BI and analytics */}
-				<div className="absolute inset-0 flex items-center justify-center">
-					<div
-						className={`${ringSizes.ring1} border-2 border-blue-600 border-opacity-40 rounded-full animate-spin border-dashed`}
-						style={{ animationDuration: '3s', animationDirection: 'reverse' }}
-					></div>
-				</div>
-				<div className="absolute inset-0 flex items-center justify-center">
-					<div
-						className={`${ringSizes.ring2} border border-blue-500 border-opacity-25 rounded-full animate-spin`}
-						style={{ animationDuration: '4s' }}
-					></div>
-				</div>
-				<div className="absolute inset-0 flex items-center justify-center">
-					<div
-						className={`${ringSizes.ring3} border border-slate-300 border-opacity-50 rounded-full animate-spin border-dotted`}
-						style={{ animationDuration: '6s', animationDirection: 'reverse' }}
-					></div>
-				</div>
+        /* Botanical SVG in center */
+        .loader-botanical {
+          position: absolute;
+          inset: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          animation: floatSlow 4s ease-in-out infinite;
+        }
 
-				{/* Data points - representing analytics and BI solutions */}
-				<div className="absolute inset-0 flex items-center justify-center">
-					<div className={`relative ${getDataPointContainerSize()}`}>
-						{/* Main data points */}
-						<div className="absolute top-1 sm:top-2 left-1/2 w-2 h-2 sm:w-3 sm:h-3 bg-blue-600 rounded-full animate-pulse transform -translate-x-1/2"></div>
-						<div
-							className="absolute bottom-1 sm:bottom-2 left-1/2 w-1.5 h-1.5 sm:w-2 sm:h-2 bg-blue-500 rounded-full animate-pulse transform -translate-x-1/2"
-							style={{ animationDelay: '0.5s' }}
-						></div>
-						<div
-							className="absolute left-1 sm:left-2 top-1/2 w-1.5 h-1.5 sm:w-2 sm:h-2 bg-blue-700 rounded-full animate-pulse transform -translate-y-1/2"
-							style={{ animationDelay: '0.25s' }}
-						></div>
-						<div
-							className="absolute right-1 sm:right-2 top-1/2 w-2 h-2 sm:w-3 sm:h-3 bg-blue-400 rounded-full animate-pulse transform -translate-y-1/2"
-							style={{ animationDelay: '0.75s' }}
-						></div>
+        /* Leaf particles */
+        .loader-leaf {
+          position: absolute;
+          font-size: 14px;
+          opacity: 0;
+          animation: leafFloat linear infinite;
+          pointer-events: none;
+        }
 
-						{/* Corner data points */}
-						<div
-							className="absolute top-2 sm:top-3 md:top-4 left-2 sm:left-3 md:left-4 w-1 h-1 sm:w-1.5 sm:h-1.5 bg-slate-400 rounded-full animate-ping"
-							style={{ animationDelay: '1s' }}
-						></div>
-						<div
-							className="absolute top-2 sm:top-3 md:top-4 right-2 sm:right-3 md:right-4 w-1 h-1 sm:w-1.5 sm:h-1.5 bg-slate-400 rounded-full animate-ping"
-							style={{ animationDelay: '1.2s' }}
-						></div>
-						<div
-							className="absolute bottom-2 sm:bottom-3 md:bottom-4 left-2 sm:left-3 md:left-4 w-1 h-1 sm:w-1.5 sm:h-1.5 bg-slate-400 rounded-full animate-ping"
-							style={{ animationDelay: '1.4s' }}
-						></div>
-						<div
-							className="absolute bottom-2 sm:bottom-3 md:bottom-4 right-2 sm:right-3 md:right-4 w-1 h-1 sm:w-1.5 sm:h-1.5 bg-slate-400 rounded-full animate-ping"
-							style={{ animationDelay: '1.6s' }}
-						></div>
-					</div>
-				</div>
-			</div>
+        /* Wordmark */
+        .loader-wordmark {
+          position: relative;
+          z-index: 1;
+          text-align: center;
+          margin-bottom: 36px;
+        }
+        .loader-eyebrow {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          font-family: 'DM Sans', sans-serif;
+          font-size: 10px;
+          letter-spacing: 2.5px;
+          text-transform: uppercase;
+          color: #c8dbc0;
+          margin-bottom: 8px;
+          opacity: 0;
+          animation: fadeUp 0.6s 0.2s ease forwards;
+        }
+        .loader-eyebrow::before,
+        .loader-eyebrow::after {
+          content: '';
+          display: block;
+          width: 20px;
+          height: 1px;
+          background: #c8dbc0;
+          opacity: 0.5;
+        }
+        .loader-title {
+          font-family: 'Playfair Display', serif;
+          font-size: 36px;
+          color: #f5f0e8;
+          line-height: 1.1;
+          letter-spacing: -0.3px;
+          opacity: 0;
+          animation: fadeUp 0.6s 0.35s ease forwards;
+        }
+        .loader-title em {
+          font-style: italic;
+          color: #d4b896;
+        }
 
-			{/* Company branding - responsive text sizes */}
-			<div className="text-center space-y-2 sm:space-y-3 px-4">
-				<h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-slate-700 tracking-wide">Bio Palette</h2>
-				<p className="text-slate-500 text-[9px] sm:text-sm font-medium tracking-wider uppercase">
-					Business Intelligence Solutions
-				</p>
-			</div>
+        /* Progress bar */
+        .loader-progress-wrap {
+          position: relative;
+          z-index: 1;
+          width: 240px;
+          text-align: center;
+        }
+        .loader-progress-numbers {
+          display: flex;
+          justify-content: space-between;
+          align-items: baseline;
+          margin-bottom: 10px;
+          opacity: 0;
+          animation: fadeUp 0.6s 0.5s ease forwards;
+        }
+        .loader-percent {
+          font-family: 'Playfair Display', serif;
+          font-size: 13px;
+          color: #d4b896;
+          letter-spacing: 1px;
+        }
+        .loader-label {
+          font-family: 'DM Sans', sans-serif;
+          font-size: 10px;
+          letter-spacing: 1.5px;
+          text-transform: uppercase;
+          color: #87a878;
+        }
+        .loader-bar-track {
+          width: 100%;
+          height: 2px;
+          background: rgba(255,255,255,0.08);
+          border-radius: 2px;
+          overflow: hidden;
+          opacity: 0;
+          animation: fadeUp 0.6s 0.5s ease forwards;
+        }
+        .loader-bar-fill {
+          height: 100%;
+          background: linear-gradient(90deg, #4a7c59, #d4b896);
+          border-radius: 2px;
+          transition: width 0.3s ease;
+          position: relative;
+        }
+        .loader-bar-fill::after {
+          content: '';
+          position: absolute;
+          right: 0;
+          top: -2px;
+          width: 4px;
+          height: 6px;
+          background: #d4b896;
+          border-radius: 2px;
+          box-shadow: 0 0 8px rgba(212,184,150,0.8);
+        }
 
-			{/* Loading text with responsive sizing */}
-			<div className="text-slate-600 text-base sm:text-lg font-medium">
-				<span className="animate-pulse">Processing</span>
-				<span className="animate-bounce text-blue-600">.</span>
-				<span className="animate-bounce text-blue-600" style={{ animationDelay: '0.1s' }}>
-					.
-				</span>
-				<span className="animate-bounce text-blue-600" style={{ animationDelay: '0.2s' }}>
-					.
-				</span>
-			</div>
+        /* Bottom hint */
+        .loader-hint {
+          position: absolute;
+          bottom: 32px;
+          font-family: 'DM Sans', sans-serif;
+          font-size: 10px;
+          letter-spacing: 1.5px;
+          text-transform: uppercase;
+          color: rgba(200,219,192,0.35);
+          opacity: 0;
+          animation: fadeUp 0.6s 0.8s ease forwards;
+        }
 
-			{/* Progress bar with responsive width */}
-			{showProgress && (
-				<div className="w-48 sm:w-64 md:w-72 lg:w-80 bg-slate-200 rounded-full h-2 sm:h-3 overflow-hidden shadow-inner">
-					<div
-						className="bg-gradient-to-r from-blue-700 via-blue-600 to-blue-500 h-2 sm:h-3 rounded-full transition-all duration-100 ease-out shadow-lg relative overflow-hidden"
-						style={{ width: `${progress}%` }}
-					>
-						{/* Shimmer effect on progress bar */}
-						<div className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-30 animate-pulse"></div>
-					</div>
-				</div>
-			)}
+        /* SVG plants bottom */
+        .loader-plants {
+          position: absolute;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-end;
+          padding: 0 40px;
+          pointer-events: none;
+          opacity: 0.2;
+        }
 
-			{/* Progress percentage - responsive text */}
-			{showProgress && (
-				<div className="text-slate-500 text-xs sm:text-sm font-semibold tracking-wide">
-					{Math.round(progress)}% Complete
-				</div>
-			)}
+        /* Keyframes */
+        @keyframes orbPulse {
+          0%, 100% { transform: scale(1); opacity: 0.18; }
+          50% { transform: scale(1.08); opacity: 0.28; }
+        }
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+        @keyframes spinRev {
+          to { transform: rotate(-360deg); }
+        }
+        @keyframes floatSlow {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-6px); }
+        }
+        @keyframes leafFloat {
+          0% { transform: translateY(-20px) rotate(0deg); opacity: 0; }
+          10% { opacity: 0.5; }
+          90% { opacity: 0.3; }
+          100% { transform: translateY(100vh) rotate(360deg); opacity: 0; }
+        }
+        @keyframes fadeUp {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes sway {
+          0%, 100% { transform: rotate(-4deg); }
+          50% { transform: rotate(4deg); }
+        }
+        @keyframes float {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-8px); }
+        }
+      `}</style>
 
-			{/* Subtle tech pattern background - responsive positioning */}
-			<div className="absolute inset-0 overflow-hidden pointer-events-none">
-				<div
-					className="absolute top-16 sm:top-20 left-6 sm:left-10 w-1 h-1 bg-blue-200 rounded-full animate-ping opacity-60"
-					style={{ animationDelay: '2s' }}
-				></div>
-				<div
-					className="absolute top-32 sm:top-40 right-12 sm:right-20 w-1 h-1 bg-blue-300 rounded-full animate-ping opacity-60"
-					style={{ animationDelay: '2.5s' }}
-				></div>
-				<div
-					className="absolute bottom-24 sm:bottom-32 left-12 sm:left-20 w-1 h-1 bg-slate-300 rounded-full animate-ping opacity-60"
-					style={{ animationDelay: '3s' }}
-				></div>
-				<div
-					className="absolute bottom-16 sm:bottom-20 right-6 sm:right-10 w-1 h-1 bg-blue-200 rounded-full animate-ping opacity-60"
-					style={{ animationDelay: '3.5s' }}
-				></div>
-			</div>
-		</div>
-	);
-};
+      <div className={`bio-loader${phase === "done" ? " done" : ""}`}>
+        {/* Orbs */}
+        <div className="loader-orb loader-orb-1" />
+        <div className="loader-orb loader-orb-2" />
+        <div className="loader-orb loader-orb-3" />
 
-export default Loading;
+        {/* Floating leaves */}
+        {["🍃", "🌿", "🍀", "🌱"].map((leaf, i) => (
+          <div
+            key={i}
+            className="loader-leaf"
+            style={{
+              left: `${15 + i * 22}%`,
+              animationDuration: `${7 + i * 2.5}s`,
+              animationDelay: `${i * 1.2}s`,
+              fontSize: `${12 + i * 2}px`,
+            }}
+          >
+            {leaf}
+          </div>
+        ))}
+
+        {/* Wordmark */}
+        <div className="loader-wordmark">
+          <div className="loader-eyebrow">Nature's Living Color System</div>
+          <div className="loader-title">
+            Bio <em>Palette</em>
+          </div>
+        </div>
+
+        {/* Ring with botanical center */}
+        <div className="loader-ring-wrap" style={{ opacity: 0, animation: "fadeUp 0.7s 0.15s ease forwards" }}>
+          <div className="loader-ring-bg" />
+          <div className="loader-ring-track" />
+          <div className="loader-ring-mid" />
+          <div className="loader-ring-inner" />
+
+          {/* Botanical SVG */}
+          <div className="loader-botanical">
+            <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
+              {/* Stem */}
+              <line x1="32" y1="58" x2="32" y2="28"
+                stroke="#87a878" strokeWidth="1.5" strokeLinecap="round"
+                style={{ animation: "float 4s ease-in-out infinite" }} />
+              {/* Leaves */}
+              <ellipse cx="32" cy="26" rx="12" ry="8" fill="#4a7c59" opacity="0.9"
+                style={{ animation: "float 4s 0.2s ease-in-out infinite", transformOrigin: "32px 26px" }} />
+              <ellipse cx="22" cy="34" rx="10" ry="6" fill="#2d5a27" opacity="0.85"
+                transform="rotate(-20 22 34)"
+                style={{ animation: "float 4s 0.5s ease-in-out infinite" }} />
+              <ellipse cx="42" cy="33" rx="9" ry="6" fill="#87a878" opacity="0.85"
+                transform="rotate(20 42 33)"
+                style={{ animation: "float 4s 0.8s ease-in-out infinite" }} />
+              {/* Small accent */}
+              <circle cx="32" cy="18" r="2.5" fill="#d4b896" opacity="0.7"
+                style={{ animation: "float 3s 0.3s ease-in-out infinite" }} />
+            </svg>
+          </div>
+        </div>
+
+        {/* Progress */}
+        <div className="loader-progress-wrap">
+          <div className="loader-progress-numbers">
+            <span className="loader-percent">{progress}%</span>
+            <span className="loader-label">
+              {progress < 35 ? "Sourcing biomes" : progress < 65 ? "Mapping pigments" : progress < 90 ? "Calibrating hues" : "Ready"}
+            </span>
+          </div>
+          <div className="loader-bar-track">
+            <div className="loader-bar-fill" style={{ width: `${progress}%` }} />
+          </div>
+        </div>
+
+        {/* Bottom hint */}
+        <div className="loader-hint">Botanical Color Intelligence</div>
+
+        {/* SVG plants */}
+        <div className="loader-plants">
+          <svg width="90" height="130" viewBox="0 0 90 130" fill="none">
+            <path d="M45 130 Q45 90 45 60" stroke="#87a878" strokeWidth="2" strokeLinecap="round"
+              style={{ animation: "sway 4s ease-in-out infinite", transformOrigin: "45px 130px" }} />
+            <ellipse cx="45" cy="58" rx="20" ry="13" fill="#4a7c59"
+              style={{ animation: "float 5s ease-in-out infinite" }} />
+            <ellipse cx="30" cy="74" rx="16" ry="10" fill="#2d5a27"
+              style={{ animation: "float 5s 0.6s ease-in-out infinite" }} />
+            <ellipse cx="60" cy="70" rx="15" ry="9" fill="#87a878"
+              style={{ animation: "float 5s 1s ease-in-out infinite" }} />
+          </svg>
+          <svg width="70" height="100" viewBox="0 0 70 100" fill="none" style={{ transform: "scaleX(-1)" }}>
+            <path d="M35 100 Q35 72 35 48" stroke="#b5c4a1" strokeWidth="1.5" strokeLinecap="round"
+              style={{ animation: "sway 4s 0.5s ease-in-out infinite", transformOrigin: "35px 100px" }} />
+            <ellipse cx="35" cy="46" rx="17" ry="11" fill="#87a878"
+              style={{ animation: "float 5s 0.8s ease-in-out infinite" }} />
+            <ellipse cx="22" cy="60" rx="13" ry="8" fill="#4a7c59"
+              style={{ animation: "float 5s 1.3s ease-in-out infinite" }} />
+          </svg>
+        </div>
+      </div>
+    </>
+  );
+}
