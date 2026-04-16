@@ -4,6 +4,7 @@ export interface Palette {
   swatchBg: string;
   hexes: { hex: string; bg: string; fg: string }[];
   accent: string;
+  biome?:string;
 }
 
 export interface Feature {
