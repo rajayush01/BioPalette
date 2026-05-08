@@ -1,57 +1,76 @@
 import React from "react";
-import { features } from "@/data";
+
+const features = [
+  { icon: "🌾", title: "Agricultural Waste",  desc: "Sourced entirely from farms and mills — no deforestation involved" },
+  { icon: "♻️", title: "Zero Waste Process",  desc: "100% of raw material converted into usable biomass fuel" },
+  { icon: "🔬", title: "Lab Certified",        desc: "ISO 17225 & BIS certified, tested for moisture & ash per batch" },
+  { icon: "🚛", title: "Pan-India Delivery",  desc: "Bulk logistics to 28 states with just-in-time scheduling" },
+];
 
 export default function FeaturesSection() {
   return (
-    <section className="bg-[#f5f0e8] py-24 px-12">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-        {/* Left copy */}
-        <div className="reveal">
-          <div className="flex items-center gap-2.5 text-[12px] tracking-[2px] uppercase text-[#4a7c59] font-semibold mb-3 before:content-[''] before:block before:w-8 before:h-0.5 before:bg-[#4a7c59] before:rounded-sm">
-            Why Bio Palette
-          </div>
-          <h2
-            className="text-[clamp(34px,4vw,54px)] leading-[1.15] mb-5"
-            style={{ fontFamily: "'Playfair Display', serif" }}
-          >
-            Color Science
-            <br />
-            Meets Living
-            <br />
-            Nature
-          </h2>
-          <p className="text-[17px] text-[#5a6e55] leading-[1.7] max-w-[560px]">
-            Our system bridges field ecology and professional design — producing palettes with measurable biological
-            authenticity.
-          </p>
-          <button className="mt-9 bg-[#4a7c59] text-white border-none px-9 py-4 rounded-full text-[15px] font-semibold cursor-pointer tracking-[0.3px] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_12px_32px_rgba(74,124,89,0.4)] hover:bg-[#87a878]">
-            Download Free Starter Kit
-          </button>
+    <section
+      id="about-section"
+      className="bg-[#f0ece3] py-24 px-12"
+      style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "80px", alignItems: "center" }}
+    >
+      {/* Left copy */}
+      <div className="reveal">
+        <div className="flex items-center gap-2.5 text-[11px] tracking-[2px] uppercase text-[#3e7a42] font-semibold mb-3 before:content-[''] before:block before:w-7 before:h-[1.5px] before:bg-[#3e7a42] before:rounded-sm">
+          Who We Are
         </div>
+        <h2
+          className="leading-[1.12] mb-5 text-[#1c3a1e]"
+          style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "clamp(36px,4vw,56px)" }}
+        >
+          Turning Agricultural Waste
+          <br />
+          into <em className="text-[#c4763a] italic">Clean Power</em>
+        </h2>
+        <p className="text-[17px] text-[#5a7a5c] leading-[1.8] max-w-[560px] mb-8">
+          BioFuel Co. transforms rice husk, sugarcane bagasse, sawdust, and agri-residues into high-density biomass
+          pellets and briquettes — delivering energy security with zero net carbon emissions.
+        </p>
 
-        {/* Feature cards grid */}
-        <div className="grid grid-cols-2 gap-7">
+        {/* Feature cards */}
+        <div className="grid grid-cols-2 gap-5">
           {features.map((f, i) => (
             <div
               key={i}
-              className="relative overflow-hidden bg-white rounded-[20px] px-8 py-9 border border-[#4a7c59]/12 cursor-default transition-all duration-[400ms] reveal hover:-translate-y-1.5 hover:shadow-[0_16px_48px_rgba(74,124,89,0.12)] before:content-[''] before:absolute before:-top-10 before:-right-10 before:w-[120px] before:h-[120px] before:rounded-full before:bg-[#e8ede2] before:opacity-0 before:transition-all before:duration-[400ms] hover:before:opacity-100 hover:before:scale-[2]"
+              className="relative overflow-hidden bg-white rounded-[18px] px-6 py-7 border border-[#3e7a42]/10 cursor-default transition-all duration-[400ms] hover:-translate-y-1.5 hover:shadow-[0_16px_48px_rgba(28,58,30,0.1)]"
               style={{ animationDelay: `${i * 0.07}s` }}
             >
+              <div className="text-[28px] mb-3">{f.icon}</div>
               <div
-                className="relative w-14 h-14 rounded-[14px] flex items-center justify-center text-[26px] mb-5"
-                style={{ background: f.bg }}
-              >
-                {f.icon}
-              </div>
-              <div
-                className="text-[19px] font-semibold mb-2.5"
-                style={{ fontFamily: "'Playfair Display', serif" }}
+                className="text-[17px] font-semibold mb-2 text-[#1c3a1e]"
+                style={{ fontFamily: "'Cormorant Garamond', serif" }}
               >
                 {f.title}
               </div>
-              <div className="text-[14px] text-[#6a7e65] leading-[1.7]">{f.desc}</div>
+              <div className="text-[13px] text-[#5a7a5c] leading-[1.65]">{f.desc}</div>
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* Right image */}
+      <div className="reveal" style={{ position: "relative", height: "480px", borderRadius: "28px", overflow: "hidden" }}>
+        <img
+          src="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80"
+          alt="Biomass processing facility"
+          className="w-full h-full object-cover"
+          style={{ filter: "saturate(1.1)" }}
+        />
+        <div
+          className="absolute inset-0"
+          style={{ background: "linear-gradient(to top,rgba(15,31,16,.7) 0%,transparent 50%)" }}
+        />
+        <div
+          className="absolute bottom-7 left-7 border border-white/12 rounded-[16px] p-[18px]"
+          style={{ background: "rgba(15,31,16,.85)", backdropFilter: "blur(12px)", color: "#f7f2e8" }}
+        >
+          <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "36px", color: "#e8a455" }}>12+</div>
+          <div style={{ fontSize: "12px", color: "#a8c5ab", marginTop: "2px" }}>Years of sustainable energy</div>
         </div>
       </div>
     </section>
